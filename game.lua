@@ -2,9 +2,13 @@ local vector = Library("vector")
 
 local objects = {}
 
-------------------------
+----------DATA----------
 
 local animations = {}
+--animations contains animation sets
+--each animation set contains the different animations available
+--each animation has a timing key, which is a set of delays between each frame.
+--it can also contain any number of other arbitrary keys with data in them.
 
 animations.infantry = {
 	idle = {
@@ -17,14 +21,20 @@ animations.infantry = {
 	},
 }
 
-------------------------
+--------PROGRAM---------
 
+--This creates a callback
 local function subject()
 	return {
-		_subscribers = {},
+  --subscribers are functions that
+  --have been provided by other
+  --systems.
+		_subscribers = {}, 
 		subscribe = function(self, func)
 			table.insert(self._subscribers, func)
 		end,
+  --All subscribers are called
+  --when the subject is invoked.
 		invoke = function(self)
 			for _, func in pairs(self._subscribers) do
 				func()
@@ -33,6 +43,9 @@ local function subject()
 	}
 end
 
+--anim_state keeps track of all the
+--necessary parts of an animation
+--system.
 local anim_state = {
 	frame = 1,
 }
@@ -40,7 +53,6 @@ anim_state.__index = anim_state
 
 function anim_state:new(animation_set, default_animation)
 	local o = {
-		frame = 1,
 		remaining = animation_set[default_animation].timing[1],
 		animation = default_animation,
 		animation_set = animation_set,
@@ -63,6 +75,7 @@ function anim_state:update(step)
 	
 	self.remaining = self.remaining - step
 	
+ --Can handle if the step skips over multiple frames
 	while self.remaining <= 0 do
 		self.frame = self.frame + 1
 		
@@ -102,15 +115,27 @@ function infantry:new(x, y)
 end
 
 local new_infantry = infantry:new(10, 10)
+--TESTING ANIMATION SYSTEM
 new_infantry.anim_state.animation = "moving"
 
+
+--------LIKO-12--------
+
 function _update(dt)
+ --We're not using a for loop
+ --here because we increment i
+ --conditionally.
 	local i = 1
-	while i < #objects do
+	while i <= #objects do
 		local object = objects[i]
+  
 		if object.update then
 			object:update(dt)
 		end
+  
+  --We don't want to increment
+  --if the object was removed
+  --from the objects table.
 		if object.removed then
 			table.remove(objects, i)
 		else
