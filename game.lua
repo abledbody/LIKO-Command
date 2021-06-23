@@ -33,42 +33,57 @@ local function subject()
 	}
 end
 
-local function new_anim_state(animation_set, default_animation)
-	return {
+local anim_state = {
+	frame = 1,
+}
+anim_state.__index = anim_state
+
+function anim_state:new(animation_set, default_animation)
+	local o = {
 		frame = 1,
-		period = 0,
+		remaining = animation_set[default_animation].timing[1],
 		animation = default_animation,
 		animation_set = animation_set,
 		on_finish = subject(),
-		fetch = function(self, key)
-			return self.animation_set[self.animation][key][self.frame]
-		end,
 	}
+	
+	setmetatable(o, self)
+	
+	return o
 end
 
-local function anim_update(anim_state, step)
-	local timing = anim_state.animation.timing
-	local on_finish = anim_state.on_finish
+function anim_state:fetch(key)
+	return self.animation_set[self.animation][key][self.frame]
+end
+
+function anim_state:update(step)
+	local timing = self.animation_set[self.animation].timing
+	local on_finish = self.on_finish
 	local frames = #timing
 	
-	anim_state.period = anim_state.period + step
+	self.remaining = self.remaining - step
 	
-	while anim_state.period >= 1 do
-		anim_state.frame = anim_state.frame + 1
-		anim_state.period = anim_state.period - 1
+	while self.remaining <= 0 do
+		self.frame = self.frame + 1
 		
-		if anim_state.frame > frames then
-			anim_state.frame = anim_state.frame - frames
+		if self.frame > frames then
+			self.frame = self.frame - frames
 			
 			if on_finish then
 				on_finish:invoke()
 			end
 		end
+		
+		self.remaining = self.remaining + timing[self.frame]
 	end
 end
 
 local infantry = {}
 infantry.__index = infantry
+
+function infantry:update(dt)
+	self.anim_state:update(dt)
+end
 
 function infantry:draw()
 	Sprite(self.anim_state:fetch("sprite"), self.position.x, self.position.y)
@@ -77,7 +92,7 @@ end
 function infantry:new(x, y)
 	local o = {
 		position = vector(x, y),
-		anim_state = new_anim_state(animations.infantry, "idle"),
+		anim_state = anim_state:new(animations.infantry, "idle"),
 	}
 	
 	setmetatable(o, self)
@@ -86,7 +101,8 @@ function infantry:new(x, y)
 	return o
 end
 
-infantry:new(10, 10)
+local new_infantry = infantry:new(10, 10)
+new_infantry.anim_state.animation = "moving"
 
 function _update(dt)
 	local i = 1
