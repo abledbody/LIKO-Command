@@ -1,0 +1,9 @@
+{
+	"Lua.diagnostics.globals": [
+		"clear",
+		"_draw",
+		"_update",
+		"Library",
+		"Sprite"
+	]
+}
