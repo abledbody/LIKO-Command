@@ -4,6 +4,7 @@
 		"_draw",
 		"_update",
 		"Library",
-		"Sprite"
+		"Sprite",
+		"_mousepressed"
 	]
 }
